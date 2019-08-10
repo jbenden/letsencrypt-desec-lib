@@ -1,0 +1,9 @@
+version: 2.1
+orbs:
+  shellcheck: circleci/shellcheck@1.3.14
+workflows:
+  shellcheck:
+    jobs:
+      - shellcheck/check:
+          path: 'src'
+          pattern: '*.bash'
