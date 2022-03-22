@@ -9,6 +9,7 @@ declare -g desec_domain=''
 declare -g desec_token=''
 declare -gr desec_rest_api='https://desec.io/api/v1'
 declare -gr desec_ns1='ns1.desec.io'
+declare -gr desec_ns2='ns2.desec.org'
 declare -gi desec_ttl=60
 declare -gi desec_http_code=0
 
@@ -227,6 +228,24 @@ desec_cname_delete() {
     desec_rrset_delete "$domain" "CNAME"
 }
 
+desec_acme_challenge_poll2() {
+    local -r domain="${1}"
+    local -r challenge=$2
+    local -i waited=0
+    local -ir delay=2
+    local -ir timeout=120
+
+    while [ $waited -lt $timeout ]; do
+        if host -t TXT "$domain" "$desec_ns2" | grep -q "\"$challenge\"" ; then
+            return 0
+        fi
+        sleep $delay
+        waited=$((waited += delay))
+    done
+
+    return 1
+}
+
 desec_acme_challenge_poll() {
     local -r domain="_acme-challenge.${1}"
     local -r challenge=$2
@@ -236,7 +255,7 @@ desec_acme_challenge_poll() {
 
     while [ $waited -lt $timeout ]; do
         if host -t TXT "$domain" "$desec_ns1" | grep -q "\"$challenge\"" ; then
-            return 0
+            return $(desec_acme_challenge_poll2 "$domain" "$challenge")
         fi
         sleep $delay
         waited=$((waited += delay))
